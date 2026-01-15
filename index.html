@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Farewell Album</title>
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --card: #1a1a20;
+      --text: #f7f7fb;
+      --muted: #b9b9c6;
+      --accent: #ff7aa2;
+      --accent2: #a88bff;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #0b0b0d, var(--bg));
+    }
+
+    /* Hero section */
+    .hero {
+      position: relative;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+    .hero .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+    .hero h1 {
+      font-size: clamp(28px, 6vw, 48px);
+      margin-bottom: 12px;
+    }
+    .hero p {
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    /* Buttons */
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 16px;
+      color: white;
+      cursor: pointer;
+      background: linear-gradient(120deg, var(--accent), var(--accent2));
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.1);
+    }
+    .btn.secondary {
+      background: #2a2a33;
+      color: var(--text);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin: 20px 0;
+    }
+    .tab {
+      cursor: pointer;
+      font-size: 22px;
+      transition: color 0.2s ease;
+    }
+    .tab.active {
+      color: var(--accent);
+    }
+    .tab:not(.active) {
+      color: var(--muted);
+    }
+
+    /* Main content */
+    main {
+      padding: 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Galleries */
+    .gallery, .videos {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+    .card img, .card video {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 12px;
+    }
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px;
+    }
+    .meta .name {
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .meta .actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* Lightbox */
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: grid;
+      place-items: center;
+      z-index: 1000;
+    }
+    .lightbox.hidden {
+      display: none;
+    }
+    .lightbox img, .lightbox video {
+      max-width: 92vw;
+      max-height: 70vh;
+      border-radius: 12px;
+    }
+    .lightbox .close,
+    .lightbox .prev,
+    .lightbox .next {
+      position: absolute;
+      border: none;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.4);
+      color: white;
+      cursor: pointer;
+    }
+    .lightbox .close {
+      top: 18px;
+      right: 18px;
+      width: 40px;
+      height: 40px;
+    }
+    .lightbox .prev {
+      left: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+    }
+    .lightbox .next {
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 48px;
+      height: 48px;
+    }
+    .lightbox .download {
+      margin-top: 14px;
+      display: inline-block;
+      background: linear-gradient(120deg, var(--accent), var(--accent2));
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: white;
+      text-decoration: none;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: var(--muted);
+    }
+
+    /* Utility */
+    .hidden {
+      display: none;
+    }
+    #soundToggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 2000; /* stays above everything */
+    }
+  .card img {
+      width: 100%;
+      height: 160px;       /* fixed thumbnail height */
+      object-fit: cover;   /* crop to fit neatly */
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Hero section with entry button -->
+  <header class="hero">
+    <div class="overlay"></div>
+    <div class="hero-content">
+      <h1>Welcome to Our Memories</h1>
+      <p style="font-weight:bold; font-size:24px;">A beautiful memories</p>
+      <p>Click below to begin the journey</p>
+      <button id="startBtn" class="btn">Click Me</button>
+    </div>
+  </header>
+
+  <!-- Hidden galleries (revealed after click) -->
+  <main id="mainContent" class="hidden">
+    <!-- Tabs -->
+    <div class="tabs">
+      <h2 id="photosTab" class="tab active">Photos</h2>
+      <h2 id="videosTab" class="tab">Videos</h2>
+    </div>
+
+    <!-- Photo gallery -->
+    <section class="gallery" id="gallery"></section>
+
+    <!-- Video gallery -->
+    <section class="videos hidden" id="videos"></section>
+  </main>
+
+  <!-- Background music -->
+  <<audio id="bgMusic" src="music/1.mp3" loop></audio>
+
+  <!-- Lightbox viewer -->
+  <div class="lightbox hidden" id="lightbox">
+    <button class="close" id="closeBtn" aria-label="Close">×</button>
+    <button class="prev" id="prevBtn" aria-label="Previous">❮</button>
+    <img id="lightboxImg" alt="" />
+    <button class="next" id="nextBtn" aria-label="Next">❯</button>
+    <a id="downloadBtn" class="download" download>Download</a>
+  </div>
+
+  <footer class="footer">
+    <p>Made with care.</p>
+    <!-- Sound toggle button -->
+    <button id="soundToggle" class="btn secondary">Sound Off</button>
+  </footer>
+
+ <script>
+  // -------------------- DATA --------------------
+const photos = [
+  { file: "Photos/1.jpg", name: "01" },
+  { file: "Photos/2.jpg", name: "02" },
+  { file: "Photos/3.jpg", name: "03" },
+  { file: "Photos/4.jpg", name: "04" },
+  { file: "Photos/5.jpg", name: "05" },
+  { file: "Photos/6.jpg", name: "06" },
+  { file: "Photos/7.jpg", name: "07" },
+  { file: "Photos/8.jpg", name: "08" },
+  { file: "Photos/9.jpg", name: "09" },
+  { file: "Photos/10.jpg", name: "10" },
+  { file: "Photos/11.jpg", name: "11" },
+  { file: "Photos/12.jpg", name: "12" },
+  { file: "Photos/13.jpg", name: "13" },
+  { file: "Photos/14.jpg", name: "14" },
+  { file: "Photos/15.jpg", name: "15" },
+  { file: "Photos/16.jpg", name: "16" },
+  { file: "Photos/17.jpg", name: "17" },
+  { file: "Photos/18.jpg", name: "18" },
+  { file: "Photos/19.jpeg", name: "19" },
+  { file: "Photos/20.jpeg", name: "20" },
+  { file: "Photos/21.jpeg", name: "21" },
+  { file: "Photos/22.jpeg", name: "22" },
+  { file: "Photos/23.jpeg", name: "23" },
+  { file: "Photos/24.jpeg", name: "24" },
+  { file: "Photos/25.jpeg", name: "25" },
+  { file: "Photos/26.jpeg", name: "26" },
+  { file: "Photos/27.jpeg", name: "27" },
+  { file: "Photos/28.jpeg", name: "28" },
+  { file: "Photos/29.jpeg", name: "29" },
+  { file: "Photos/30.jpeg", name: "30" },
+  { file: "Photos/31.jpeg", name: "31" },
+  { file: "Photos/32.jpeg", name: "32" },
+  { file: "Photos/33.jpeg", name: "33" },
+  { file: "Photos/34.jpeg", name: "34" },
+  { file: "Photos/35.jpeg", name: "35" },
+  { file: "Photos/36.jpeg", name: "36" },
+  { file: "Photos/37.jpeg", name: "37" },
+  { file: "Photos/38.jpeg", name: "38" },
+  { file: "Photos/39.jpeg", name: "39" },
+  { file: "Photos/40.jpeg", name: "40" },
+  { file: "Photos/41.jpeg", name: "41" },
+  { file: "Photos/42.jpeg", name: "42" },
+  { file: "Photos/43.jpeg", name: "43" },
+  { file: "Photos/44.jpeg", name: "44" },
+  { file: "Photos/45.jpeg", name: "45" },
+  { file: "Photos/46.jpeg", name: "46" },
+  { file: "Photos/47.jpeg", name: "47" },
+  { file: "Photos/48.jpeg", name: "48" },
+  { file: "Photos/49.jpeg", name: "49" },
+  { file: "Photos/50.jpeg", name: "50" },
+  { file: "Photos/51.jpeg", name: "51" },
+  { file: "Photos/52.jpeg", name: "52" },
+  { file: "Photos/53.jpeg", name: "53" },
+  { file: "Photos/54.jpeg", name: "54" },
+  { file: "Photos/55.jpeg", name: "55" },
+  { file: "Photos/56.jpeg", name: "56" },
+  { file: "Photos/57.jpeg", name: "57" },
+  { file: "Photos/58.jpeg", name: "58" },
+  { file: "Photos/59.jpeg", name: "59" },
+  { file: "Photos/60.jpeg", name: "60" },
+  { file: "Photos/61.jpeg", name: "61" },
+  { file: "Photos/62.jpeg", name: "62" },
+  { file: "Photos/63.jpeg", name: "63" },
+  { file: "Photos/64.jpeg", name: "64" },
+  { file: "Photos/65.jpeg", name: "65" },
+  { file: "Photos/66.jpeg", name: "66" }
+];
+
+const videos = [
+  { file: "Videos/1.mp4", name: "1" },
+  { file: "Videos/2.mp4", name: "2" },
+  { file: "Videos/3.mp4", name: "3" },
+  { file: "Videos/4.mp4", name: "4" },
+  { file: "Videos/5.mp4", name: "5" },
+  { file: "Videos/6.mp4", name: "6" },
+  { file: "Videos/7.mp4", name: "7" },
+  { file: "Videos/8.mp4", name: "8" },
+  { file: "Videos/9.mp4", name: "9" },
+  { file: "Videos/10.mp4", name: "10" },
+  { file: "Videos/11.mp4", name: "11" },
+  { file: "Videos/12.mp4", name: "12" },
+  { file: "Videos/13.mp4", name: "13" },
+  { file: "Videos/14.mp4", name: "14" },
+  { file: "Videos/15.mp4", name: "15" },
+  { file: "Videos/16.mp4", name: "16" },
+  { file: "Videos/17.mp4", name: "17" },
+  { file: "Videos/18.mp4", name: "18" },
+  { file: "Videos/19.mp4", name: "19" },
+  { file: "Videos/20.mp4", name: "20" },
+  { file: "Videos/21.mp4", name: "21" },
+  { file: "Videos/22.mp4", name: "22" },
+  { file: "Videos/23.mp4", name: "23" },
+  { file: "Videos/24.mp4", name: "24" }
+];
+
+  // -------------------- DOM ELEMENTS --------------------
+  const startBtn = document.getElementById("startBtn");
+  const mainContent = document.getElementById("mainContent");
+  const bgMusic = document.getElementById("bgMusic");
+  const soundToggle = document.getElementById("soundToggle");
+
+  const galleryEl = document.getElementById("gallery");
+  const videosEl = document.getElementById("videos");
+
+  const lightbox = document.getElementById("lightbox");
+  let lightboxContent = document.getElementById("lightboxImg");
+  const downloadBtn = document.getElementById("downloadBtn");
+  const closeBtn = document.getElementById("closeBtn");
+  const prevBtn = document.getElementById("prevBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  const photosTab = document.getElementById("photosTab");
+  const videosTab = document.getElementById("videosTab");
+
+  let currentIndex = -1;
+  let currentMode = "photo";
+
+  // -------------------- ENTRY BUTTON --------------------
+  startBtn.addEventListener("click", () => {
+    mainContent.classList.remove("hidden");   // show galleries
+    startBtn.style.display = "none";          // hide entry button
+    bgMusic.play();                           // start background music
+  });
+
+  // -------------------- SOUND TOGGLE --------------------
+  soundToggle.addEventListener("click", () => {
+    if (bgMusic.muted) {
+      bgMusic.muted = false;
+      soundToggle.textContent = "Sound Off";
+    } else {
+      bgMusic.muted = true;
+      soundToggle.textContent = "Sound On";
+    }
+  });
+
+  // -------------------- RENDER PHOTOS --------------------
+  function renderPhotos() {
+    galleryEl.innerHTML = "";
+    photos.forEach((p, index) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const img = document.createElement("img");
+      img.src = `photos/${p.file}`;
+      img.alt = p.name;
+      img.loading = "lazy";
+      img.addEventListener("click", () => openPhotoLightbox(index));
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = p.name;
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const viewBtn = document.createElement("button");
+      viewBtn.className = "btn secondary";
+      viewBtn.textContent = "View";
+      viewBtn.addEventListener("click", () => openPhotoLightbox(index));
+
+      const downloadLink = document.createElement("a");
+      downloadLink.className = "btn";
+      downloadLink.textContent = "Download";
+      downloadLink.href = `photos/${p.file}`;
+      downloadLink.download = p.file;
+
+      actions.appendChild(viewBtn);
+      actions.appendChild(downloadLink);
+
+      meta.appendChild(name);
+      meta.appendChild(actions);
+
+      card.appendChild(img);
+      card.appendChild(meta);
+      galleryEl.appendChild(card);
+    });
+  }
+
+  // -------------------- RENDER VIDEOS --------------------
+  function renderVideos() {
+    videosEl.innerHTML = "";
+    videos.forEach((v, index) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const vid = document.createElement("video");
+      vid.src = `videos/${v.file}`;
+      vid.controls = true;
+      vid.title = v.name;
+      vid.style.width = "100%";
+      vid.style.borderRadius = "12px";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      const name = document.createElement("div");
+      name.className = "name";
+      name.textContent = v.name;
+
+      const actions = document.createElement("div");
+      actions.className = "actions";
+
+      const viewBtn = document.createElement("button");
+      viewBtn.className = "btn secondary";
+      viewBtn.textContent = "View";
+      viewBtn.addEventListener("click", () => openVideoLightbox(index));
+
+      actions.appendChild(viewBtn);
+      meta.appendChild(name);
+      meta.appendChild(actions);
+
+      card.appendChild(vid);
+      card.appendChild(meta);
+      videosEl.appendChild(card);
+    });
+  }
+  // -------------------- LIGHTBOX FUNCTIONS --------------------
+  function openPhotoLightbox(index) {
+    currentMode = "photo";
+    currentIndex = index;
+
+    const photo = photos[index];
+    const img = document.createElement("img");
+    img.src = `photos/${photo.file}`;
+    img.alt = photo.name;
+    img.style.maxWidth = "92vw";
+    img.style.maxHeight = "70vh";
+    img.style.borderRadius = "12px";
+    img.style.objectFit = "contain";
+
+    lightboxContent.replaceWith(img);
+    lightboxContent = img;
+
+    downloadBtn.href = `photos/${photo.file}`;
+    downloadBtn.download = photo.file;
+    lightbox.classList.remove("hidden");
+
+    // Hide sound toggle when viewing
+    soundToggle.style.display = "none";
+  }
+
+  function openVideoLightbox(index) {
+    currentMode = "video";
+    currentIndex = index;
+
+    const videoFile = videos[index].file;
+    const videoEl = document.createElement("video");
+    videoEl.src = `videos/${videoFile}`;
+    videoEl.controls = true;
+    videoEl.autoplay = true;
+    videoEl.style.maxWidth = "92vw";
+    videoEl.style.maxHeight = "70vh";
+    videoEl.style.borderRadius = "12px";
+
+    lightboxContent.replaceWith(videoEl);
+    lightboxContent = videoEl;
+
+    downloadBtn.href = `videos/${videoFile}`;
+    downloadBtn.download = videoFile;
+    lightbox.classList.remove("hidden");
+
+    // Hide sound toggle when viewing
+    soundToggle.style.display = "none";
+  }
+
+  function closeLightbox() {
+    lightbox.classList.add("hidden");
+    currentIndex = -1;
+
+    // Show sound toggle again
+    soundToggle.style.display = "block";
+  }
+
+  function showPrev() {
+    if (currentMode === "photo" && currentIndex > 0) {
+      openPhotoLightbox(currentIndex - 1);
+    } else if (currentMode === "video" && currentIndex > 0) {
+      openVideoLightbox(currentIndex - 1);
+    }
+  }
+
+  function showNext() {
+    if (currentMode === "photo" && currentIndex < photos.length - 1) {
+      openPhotoLightbox(currentIndex + 1);
+    } else if (currentMode === "video" && currentIndex < videos.length - 1) {
+      openVideoLightbox(currentIndex + 1);
+    }
+  }
+
+  // -------------------- LIGHTBOX EVENTS --------------------
+  closeBtn.addEventListener("click", closeLightbox);
+  lightbox.addEventListener("click", (e) => {
+    if (e.target === lightbox) closeLightbox();
+  });
+  prevBtn.addEventListener("click", showPrev);
+  nextBtn.addEventListener("click", showNext);
+
+  document.addEventListener("keydown", (e) => {
+    if (!lightbox.classList.contains("hidden")) {
+      if (e.key === "ArrowLeft") showPrev();
+      else if (e.key === "ArrowRight") showNext();
+      else if (e.key === "Escape") closeLightbox();
+    }
+  });
+
+  // -------------------- TAB SWITCHING --------------------
+  photosTab.addEventListener("click", () => {
+    photosTab.classList.add("active");
+    videosTab.classList.remove("active");
+    galleryEl.classList.remove("hidden");
+    videosEl.classList.add("hidden");
+  });
+
+  videosTab.addEventListener("click", () => {
+    videosTab.classList.add("active");
+    photosTab.classList.remove("active");
+    videosEl.classList.remove("hidden");
+    galleryEl.classList.add("hidden");
+  });
+
+  // -------------------- MUSIC + VIDEO INTERACTION --------------------
+  videosEl.addEventListener("play", (e) => {
+    if (e.target.tagName === "VIDEO") {
+      bgMusic.pause();
+    }
+  }, true);
+
+  videosEl.addEventListener("ended", (e) => {
+    if (e.target.tagName === "VIDEO") {
+      bgMusic.play();
+    }
+  }, true);
+
+  // -------------------- INIT --------------------
+  renderPhotos();
+  renderVideos();
+</script>
+</body>
+
+</html>
+
